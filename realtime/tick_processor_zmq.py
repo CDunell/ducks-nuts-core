@@ -31,14 +31,10 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 import os
+from .symbols import active as get_symbols
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('DataIngest')
-
-PINNED_SYMBOLS = [
-    "btcusdt", "ethusdt", "solusdt", "xrpusdt", "hypeusdt",
-    "adausdt", "shibusdt", "avaxusdt", "linkusdt", "dotusdt",
-]
 
 
 class BinanceWebsocketClient:
@@ -145,10 +141,11 @@ if __name__ == "__main__":
         raise ValueError("BINANCE_WS_URL not set in environment or .env file")
 
     try:
-        logger.info(f"Tracking pinned symbols: {PINNED_SYMBOLS}")
+        symbols = [s.lower() for s in get_symbols()]
+        logger.info(f"Tracking symbols: {symbols}")
 
         processor = TickProcessor()
-        ws_client = BinanceWebsocketClient(url=ws_url, processor=processor, symbols=PINNED_SYMBOLS)
+        ws_client = BinanceWebsocketClient(url=ws_url, processor=processor, symbols=symbols)
         ws_client.run()
         
     except KeyboardInterrupt:

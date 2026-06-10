@@ -9,7 +9,7 @@ from dateutil.relativedelta import relativedelta
 from .storage import Storage
 from .models import BackfillJob, BackfillStatus
 from .chunker import generate_chunks
-from realtime.tick_processor_zmq import PINNED_SYMBOLS
+from realtime.symbols import active as get_symbols
 
 async def backfill_top_symbols(
     limit: int = None,
@@ -24,7 +24,7 @@ async def backfill_top_symbols(
     end = datetime.utcnow()
     start = end - relativedelta(years=years)
 
-    for symbol in [s.upper() for s in PINNED_SYMBOLS]:
+    for symbol in get_symbols():
         from .core import BackfillEngine
         job_id = str(uuid.uuid4())
         job = BackfillJob(

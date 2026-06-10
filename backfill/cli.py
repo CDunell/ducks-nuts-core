@@ -16,8 +16,80 @@ from .monitor import get_job_progress, format_progress_report
 from .recovery import reset_failed_chunks
 from .chunker import generate_chunks
 from .batch import backfill_top_symbols
+from realtime.symbols import load as load_symbols, save as save_symbols, active as active_symbols
 
 app = typer.Typer(help="Backfill CLI")
+symbols_app = typer.Typer(help="Manage pinned symbols")
+app.add_typer(symbols_app, name="symbols")
+
+
+@symbols_app.command("list")
+def symbols_list():
+    """Show all symbols and their enabled/disabled status."""
+    for entry in load_symbols():
+        state = "enabled" if entry["enabled"] else "disabled"
+        typer.echo(f"{entry['symbol']:12s}  {state}")
+
+
+@symbols_app.command("add")
+def symbols_add(symbol: str = typer.Argument(..., help="Symbol to add, e.g. HYPEUSDT")):
+    """Add a new symbol (enabled by default)."""
+    symbol = symbol.upper()
+    data = load_symbols()
+    if any(e["symbol"] == symbol for e in data):
+        typer.echo(f"{symbol} already exists")
+        raise typer.Exit(1)
+    data.append({"symbol": symbol, "enabled": True})
+    save_symbols(data)
+    typer.echo(f"Added {symbol}")
+
+
+@symbols_app.command("enable")
+def symbols_enable(symbol: str = typer.Argument(...)):
+    """Enable a disabled symbol."""
+    symbol = symbol.upper()
+    data = load_symbols()
+    for entry in data:
+        if entry["symbol"] == symbol:
+            entry["enabled"] = True
+            save_symbols(data)
+            typer.echo(f"Enabled {symbol}")
+            return
+    typer.echo(f"{symbol} not found")
+    raise typer.Exit(1)
+
+
+@symbols_app.command("disable")
+def symbols_disable(symbol: str = typer.Argument(...)):
+    """Disable a symbol without removing it."""
+    symbol = symbol.upper()
+    data = load_symbols()
+    for entry in data:
+        if entry["symbol"] == symbol:
+            entry["enabled"] = False
+            save_symbols(data)
+            typer.echo(f"Disabled {symbol}")
+            return
+    typer.echo(f"{symbol} not found")
+    raise typer.Exit(1)
+
+
+@symbols_app.command("remove")
+def symbols_remove(
+    symbol: str = typer.Argument(...),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
+):
+    """Permanently remove a symbol."""
+    symbol = symbol.upper()
+    data = load_symbols()
+    if not any(e["symbol"] == symbol for e in data):
+        typer.echo(f"{symbol} not found")
+        raise typer.Exit(1)
+    if not yes:
+        typer.confirm(f"Remove {symbol} permanently?", abort=True)
+    data = [e for e in data if e["symbol"] != symbol]
+    save_symbols(data)
+    typer.echo(f"Removed {symbol}")
 
 @app.command()
 def start(
