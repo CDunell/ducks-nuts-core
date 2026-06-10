@@ -6,37 +6,26 @@ import uuid
 import asyncio
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from .clients import BinanceClient
 from .storage import Storage
 from .models import BackfillJob, BackfillStatus
 from .chunker import generate_chunks
+from realtime.tick_processor_zmq import PINNED_SYMBOLS
 
 async def backfill_top_symbols(
-    limit: int = 10,
+    limit: int = None,
     years: int = 2,
     chunk_hours: int = 6,
     db_path: str = None
 ):
     """
-    Automatically create and run backfill jobs for the top `limit`
-    Binance symbols by 24hr volume over the past `years` years.
+    Run backfill jobs for all pinned symbols over the past `years` years.
     """
     storage = Storage(db_path=db_path)
-    client = BinanceClient()
-    tickers = await client.fetch_24hr_tickers()
-    usdt = [t for t in tickers if t["symbol"].endswith("USDT")]
-    sorted_pairs = sorted(
-        usdt,
-        key=lambda t: float(t["quoteVolume"]),
-        reverse=True
-    )[:limit]
-
     end = datetime.utcnow()
     start = end - relativedelta(years=years)
 
-    for info in sorted_pairs:
+    for symbol in [s.upper() for s in PINNED_SYMBOLS]:
         from .core import BackfillEngine
-        symbol = info["symbol"]
         job_id = str(uuid.uuid4())
         job = BackfillJob(
             id=job_id,

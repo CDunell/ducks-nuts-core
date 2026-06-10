@@ -27,7 +27,6 @@ import time
 import json
 import logging
 import websocket
-import requests
 from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
@@ -36,24 +35,10 @@ import os
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('DataIngest')
 
-def get_top_10_usdt_pairs():
-    """Fetches the top 10 trading pairs against USDT by 24h quote volume."""
-    try:
-        url = "https://api.binance.com/api/v3/ticker/24hr"
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-
-        # Filter for pairs ending with USDT and sort by quote volume
-        usdt_pairs = [p for p in data if p['symbol'].endswith('USDT')]
-        sorted_pairs = sorted(usdt_pairs, key=lambda x: float(x['quoteVolume']), reverse=True)
-        
-        top_10 = [p['symbol'].lower() for p in sorted_pairs[:10]]
-        return top_10
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Could not fetch top symbols from Binance API: {e}")
-        # Fallback to a default list if API fails
-        return ["btcusdt", "ethusdt", "solusdt", "xrpusdt", "hypeusdt", "adausdt", "shibusdt", "avaxusdt", "linkusdt", "dotusdt"]
+PINNED_SYMBOLS = [
+    "btcusdt", "ethusdt", "solusdt", "xrpusdt", "hypeusdt",
+    "adausdt", "shibusdt", "avaxusdt", "linkusdt", "dotusdt",
+]
 
 
 class BinanceWebsocketClient:
@@ -160,11 +145,10 @@ if __name__ == "__main__":
         raise ValueError("BINANCE_WS_URL not set in environment or .env file")
 
     try:
-        top_10_symbols = get_top_10_usdt_pairs()
-        logger.info(f"Tracking top 10 symbols by volume: {top_10_symbols}")
-        
+        logger.info(f"Tracking pinned symbols: {PINNED_SYMBOLS}")
+
         processor = TickProcessor()
-        ws_client = BinanceWebsocketClient(url=ws_url, processor=processor, symbols=top_10_symbols)
+        ws_client = BinanceWebsocketClient(url=ws_url, processor=processor, symbols=PINNED_SYMBOLS)
         ws_client.run()
         
     except KeyboardInterrupt:
