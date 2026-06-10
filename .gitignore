@@ -1,0 +1,13 @@
+.env
+*.pyc
+__pycache__/
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+*.duckdb
+data/
+output/
+*.log
+.DS_Store
