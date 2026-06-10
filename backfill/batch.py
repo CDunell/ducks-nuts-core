@@ -3,7 +3,6 @@
 # Source file ID: file-DT2iLS1uF8b8kGBQbmsHTG
 
 import uuid
-import asyncio
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from .storage import Storage
@@ -11,8 +10,7 @@ from .models import BackfillJob, BackfillStatus
 from .chunker import generate_chunks
 from realtime.symbols import active as get_symbols
 
-async def backfill_top_symbols(
-    limit: int = None,
+async def backfill_pinned_symbols(
     years: int = 2,
     chunk_hours: int = 6,
     db_path: str = None

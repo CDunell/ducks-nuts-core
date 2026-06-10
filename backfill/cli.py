@@ -15,8 +15,8 @@ from .core import BackfillEngine
 from .monitor import get_job_progress, format_progress_report
 from .recovery import reset_failed_chunks
 from .chunker import generate_chunks
-from .batch import backfill_top_symbols
-from realtime.symbols import load as load_symbols, save as save_symbols, active as active_symbols
+from .batch import backfill_pinned_symbols
+from realtime.symbols import load as load_symbols, save as save_symbols
 
 app = typer.Typer(help="Backfill CLI")
 symbols_app = typer.Typer(help="Manage pinned symbols")
@@ -143,15 +143,14 @@ def status(
 
 @app.command()
 def bulk(
-    limit: int = typer.Option(10, "--limit", help="Number of top symbols"),
     years: int = typer.Option(2, "--years", help="Years of history"),
     chunk_hours: int = typer.Option(6, "--chunk-hours", help="Chunk size in hours"),
     db_path: str = typer.Option(None, "--db-path", help="Path to DuckDB file"),
 ):
     """
-    Backfill top Binance symbols by volume over the past N years.
+    Backfill all pinned symbols over the past N years.
     """
-    asyncio.run(backfill_top_symbols(limit, years, chunk_hours, db_path))
+    asyncio.run(backfill_pinned_symbols(years, chunk_hours, db_path))
     typer.echo("Bulk backfill complete.")
 
 # ⚠️ PATCHED: 2025-07-23
